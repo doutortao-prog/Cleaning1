@@ -36,7 +36,7 @@ export const ElCastorCatalog: React.FC = () => {
             </div>
             {catalogPdf && (
                 <div className="flex gap-2">
-                    <a href={catalogPdf.data} download={catalogPdf.name} className="inline-flex items-center px-4 py-2 border border-white text-sm font-medium rounded-md text-elcastor-red bg-white hover:bg-gray-100 transition-colors shadow-sm">
+                    <a href={catalogPdf.url} download={catalogPdf.name} className="inline-flex items-center px-4 py-2 border border-white text-sm font-medium rounded-md text-elcastor-red bg-white hover:bg-gray-100 transition-colors shadow-sm">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         Baixar PDF Original
                     </a>
@@ -68,13 +68,13 @@ export const ElCastorCatalog: React.FC = () => {
               </div>
               <div className="w-full h-[800px]">
                   <object
-                    data={catalogPdf.data}
+                    data={catalogPdf.url}
                     type="application/pdf"
                     className="w-full h-full"
                   >
                     <div className="flex flex-col items-center justify-center h-full space-y-4 p-8">
                         <p>Seu navegador não suporta visualização de PDF integrada.</p>
-                        <a href={catalogPdf.data} download={catalogPdf.name}>
+                        <a href={catalogPdf.url} download={catalogPdf.name}>
                             <Button variant="elcastor">Clique aqui para baixar</Button>
                         </a>
                     </div>

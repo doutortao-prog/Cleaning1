@@ -1,125 +1,96 @@
 
 import { Brand, CatalogFile, VideoResource } from '../types';
-
-const DB_NAME = 'CleanMasterDB';
-const DB_VERSION = 2; // Incrementado para adicionar store de vídeos
-const STORE_CATALOGS = 'catalogs';
-const STORE_VIDEOS = 'videos';
-
-// Utilitário para abrir o banco de dados
-const openDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
-    // Verifica suporte
-    if (!('indexedDB' in window)) {
-        reject('IndexedDB not supported');
-        return;
-    }
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      
-      // Store de Catálogos (PDFs)
-      if (!db.objectStoreNames.contains(STORE_CATALOGS)) {
-        db.createObjectStore(STORE_CATALOGS);
-      }
-
-      // Store de Vídeos
-      if (!db.objectStoreNames.contains(STORE_VIDEOS)) {
-        db.createObjectStore(STORE_VIDEOS, { keyPath: 'id' });
-      }
-    };
-
-    request.onsuccess = (event) => {
-      resolve((event.target as IDBOpenDBRequest).result);
-    };
-
-    request.onerror = (event) => {
-      reject((event.target as IDBOpenDBRequest).error);
-    };
-  });
-};
+import { db, storage } from './firebaseConfig';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocs, 
+  deleteDoc, 
+  query, 
+  where 
+} from "firebase/firestore";
+import { 
+  ref, 
+  uploadBytes, 
+  getDownloadURL, 
+  deleteObject 
+} from "firebase/storage";
 
 // --- CATALOGS (PDFs) ---
 
 export const saveCatalog = async (brand: Brand, file: File): Promise<boolean> => {
   try {
-    const db = await openDB();
-    const reader = new FileReader();
+    // 1. Upload Arquivo para Storage
+    const storageRef = ref(storage, `catalogs/${brand}.pdf`);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
 
-    return new Promise((resolve) => {
-      reader.onload = () => {
-        const base64Data = reader.result as string;
-        const catalogData: CatalogFile = {
-          name: file.name,
-          data: base64Data,
-          type: file.type,
-          uploadDate: new Date().toISOString()
-        };
+    // 2. Salvar Metadados no Firestore
+    const catalogData: CatalogFile = {
+      name: file.name,
+      url: url,
+      type: file.type,
+      uploadDate: new Date().toISOString()
+    };
 
-        const transaction = db.transaction(STORE_CATALOGS, 'readwrite');
-        const store = transaction.objectStore(STORE_CATALOGS);
-        const request = store.put(catalogData, brand);
-
-        request.onsuccess = () => resolve(true);
-        request.onerror = (e) => {
-            console.error("Erro ao salvar no IndexedDB", e);
-            resolve(false);
-        };
-      };
-      reader.onerror = () => resolve(false);
-      reader.readAsDataURL(file);
-    });
+    await setDoc(doc(db, "catalogs", brand), catalogData);
+    return true;
   } catch (e) {
-    console.error("IndexedDB Error", e);
+    console.error("Firebase Storage/DB Error", e);
     return false;
   }
 };
 
 export const getCatalog = async (brand: Brand): Promise<CatalogFile | null> => {
   try {
-    const db = await openDB();
-    return new Promise((resolve) => {
-      const transaction = db.transaction(STORE_CATALOGS, 'readonly');
-      const store = transaction.objectStore(STORE_CATALOGS);
-      const request = store.get(brand);
+    const docRef = doc(db, "catalogs", brand);
+    const docSnap = await getDoc(docRef);
 
-      request.onsuccess = () => {
-        resolve(request.result as CatalogFile || null);
-      };
-      request.onerror = () => resolve(null);
-    });
+    if (docSnap.exists()) {
+      return docSnap.data() as CatalogFile;
+    } else {
+      return null;
+    }
   } catch (e) {
-    console.error("Erro ao ler do IndexedDB", e);
+    console.error("Error getting catalog", e);
     return null;
   }
 };
 
 export const removeCatalog = async (brand: Brand): Promise<void> => {
   try {
-    const db = await openDB();
-    const transaction = db.transaction(STORE_CATALOGS, 'readwrite');
-    const store = transaction.objectStore(STORE_CATALOGS);
-    store.delete(brand);
+    // Delete from Firestore
+    await deleteDoc(doc(db, "catalogs", brand));
+    // Delete from Storage
+    const storageRef = ref(storage, `catalogs/${brand}.pdf`);
+    await deleteObject(storageRef);
   } catch (e) {
-    console.error("Erro ao remover do IndexedDB", e);
+    console.error("Error removing catalog", e);
   }
 };
 
 // --- VIDEOS ---
 
-export const saveVideo = async (video: VideoResource): Promise<boolean> => {
+export const saveVideo = async (video: VideoResource, file?: File): Promise<boolean> => {
   try {
-    const db = await openDB();
-    const transaction = db.transaction(STORE_VIDEOS, 'readwrite');
-    const store = transaction.objectStore(STORE_VIDEOS);
-    const request = store.put(video);
+    let finalUrl = video.data;
 
-    return new Promise((resolve) => {
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => resolve(false);
-    });
+    // Se for arquivo, faz upload primeiro
+    if (video.type === 'file' && file) {
+      const storageRef = ref(storage, `videos/${video.id}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      finalUrl = await getDownloadURL(storageRef);
+    }
+
+    const videoData: VideoResource = {
+        ...video,
+        data: finalUrl
+    };
+
+    await setDoc(doc(db, "videos", video.id), videoData);
+    return true;
   } catch (e) {
     console.error("Erro ao salvar vídeo", e);
     return false;
@@ -128,34 +99,38 @@ export const saveVideo = async (video: VideoResource): Promise<boolean> => {
 
 export const getVideos = async (brand?: Brand): Promise<VideoResource[]> => {
   try {
-    const db = await openDB();
-    return new Promise((resolve) => {
-      const transaction = db.transaction(STORE_VIDEOS, 'readonly');
-      const store = transaction.objectStore(STORE_VIDEOS);
-      const request = store.getAll();
+    const videosRef = collection(db, "videos");
+    let q = query(videosRef);
+    
+    // Filtro Opcional
+    // if (brand) q = query(videosRef, where("brand", "==", brand)); 
+    // Nota: Filtraremos no cliente para simplificar indices no inicio
 
-      request.onsuccess = () => {
-        const allVideos = request.result as VideoResource[];
-        if (brand) {
-          resolve(allVideos.filter(v => v.brand === brand));
-        } else {
-          resolve(allVideos);
-        }
-      };
-      request.onerror = () => resolve([]);
+    const querySnapshot = await getDocs(q);
+    const videos: VideoResource[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      videos.push(doc.data() as VideoResource);
     });
+
+    if (brand) {
+        return videos.filter(v => v.brand === brand);
+    }
+    return videos;
   } catch (e) {
     console.error("Erro ao buscar vídeos", e);
     return [];
   }
 };
 
-export const deleteVideo = async (id: string): Promise<void> => {
+export const deleteVideo = async (id: string, type: 'file' | 'link'): Promise<void> => {
   try {
-    const db = await openDB();
-    const transaction = db.transaction(STORE_VIDEOS, 'readwrite');
-    const store = transaction.objectStore(STORE_VIDEOS);
-    store.delete(id);
+    // 1. Pega dados para saber nome do arquivo se for file (opcional, ou tenta deletar direto)
+    // Simplificação: Deleta doc do firestore
+    await deleteDoc(doc(db, "videos", id));
+    
+    // Se quiser deletar o arquivo do storage, precisaria guardar o 'path' do storage no objeto video.
+    // Por enquanto deletamos a referência no banco.
   } catch (e) {
     console.error("Erro ao deletar vídeo", e);
   }

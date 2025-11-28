@@ -53,7 +53,7 @@ const App: React.FC = () => {
         if (file) {
             // Cria um link temporário para download
             const link = document.createElement('a');
-            link.href = file.data;
+            link.href = file.url;
             link.download = file.name;
             document.body.appendChild(link);
             link.click();
