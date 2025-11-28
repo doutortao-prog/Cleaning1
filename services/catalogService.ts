@@ -1,9 +1,10 @@
 
-import { Brand, CatalogFile } from '../types';
+import { Brand, CatalogFile, VideoResource } from '../types';
 
 const DB_NAME = 'CleanMasterDB';
-const DB_VERSION = 1;
-const STORE_NAME = 'catalogs';
+const DB_VERSION = 2; // Incrementado para adicionar store de vídeos
+const STORE_CATALOGS = 'catalogs';
+const STORE_VIDEOS = 'videos';
 
 // Utilitário para abrir o banco de dados
 const openDB = (): Promise<IDBDatabase> => {
@@ -18,8 +19,15 @@ const openDB = (): Promise<IDBDatabase> => {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
+      
+      // Store de Catálogos (PDFs)
+      if (!db.objectStoreNames.contains(STORE_CATALOGS)) {
+        db.createObjectStore(STORE_CATALOGS);
+      }
+
+      // Store de Vídeos
+      if (!db.objectStoreNames.contains(STORE_VIDEOS)) {
+        db.createObjectStore(STORE_VIDEOS, { keyPath: 'id' });
       }
     };
 
@@ -32,6 +40,8 @@ const openDB = (): Promise<IDBDatabase> => {
     };
   });
 };
+
+// --- CATALOGS (PDFs) ---
 
 export const saveCatalog = async (brand: Brand, file: File): Promise<boolean> => {
   try {
@@ -48,8 +58,8 @@ export const saveCatalog = async (brand: Brand, file: File): Promise<boolean> =>
           uploadDate: new Date().toISOString()
         };
 
-        const transaction = db.transaction(STORE_NAME, 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
+        const transaction = db.transaction(STORE_CATALOGS, 'readwrite');
+        const store = transaction.objectStore(STORE_CATALOGS);
         const request = store.put(catalogData, brand);
 
         request.onsuccess = () => resolve(true);
@@ -71,8 +81,8 @@ export const getCatalog = async (brand: Brand): Promise<CatalogFile | null> => {
   try {
     const db = await openDB();
     return new Promise((resolve) => {
-      const transaction = db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
+      const transaction = db.transaction(STORE_CATALOGS, 'readonly');
+      const store = transaction.objectStore(STORE_CATALOGS);
       const request = store.get(brand);
 
       request.onsuccess = () => {
@@ -89,10 +99,64 @@ export const getCatalog = async (brand: Brand): Promise<CatalogFile | null> => {
 export const removeCatalog = async (brand: Brand): Promise<void> => {
   try {
     const db = await openDB();
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+    const transaction = db.transaction(STORE_CATALOGS, 'readwrite');
+    const store = transaction.objectStore(STORE_CATALOGS);
     store.delete(brand);
   } catch (e) {
     console.error("Erro ao remover do IndexedDB", e);
+  }
+};
+
+// --- VIDEOS ---
+
+export const saveVideo = async (video: VideoResource): Promise<boolean> => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(STORE_VIDEOS, 'readwrite');
+    const store = transaction.objectStore(STORE_VIDEOS);
+    const request = store.put(video);
+
+    return new Promise((resolve) => {
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    });
+  } catch (e) {
+    console.error("Erro ao salvar vídeo", e);
+    return false;
+  }
+};
+
+export const getVideos = async (brand?: Brand): Promise<VideoResource[]> => {
+  try {
+    const db = await openDB();
+    return new Promise((resolve) => {
+      const transaction = db.transaction(STORE_VIDEOS, 'readonly');
+      const store = transaction.objectStore(STORE_VIDEOS);
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const allVideos = request.result as VideoResource[];
+        if (brand) {
+          resolve(allVideos.filter(v => v.brand === brand));
+        } else {
+          resolve(allVideos);
+        }
+      };
+      request.onerror = () => resolve([]);
+    });
+  } catch (e) {
+    console.error("Erro ao buscar vídeos", e);
+    return [];
+  }
+};
+
+export const deleteVideo = async (id: string): Promise<void> => {
+  try {
+    const db = await openDB();
+    const transaction = db.transaction(STORE_VIDEOS, 'readwrite');
+    const store = transaction.objectStore(STORE_VIDEOS);
+    store.delete(id);
+  } catch (e) {
+    console.error("Erro ao deletar vídeo", e);
   }
 };

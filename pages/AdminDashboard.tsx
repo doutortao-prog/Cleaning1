@@ -1,16 +1,26 @@
 
 import React, { useState, useEffect } from 'react';
 import { getAllUsers } from '../services/authService';
-import { saveCatalog, getCatalog, removeCatalog } from '../services/catalogService';
-import { User, Brand, CatalogFile } from '../types';
+import { saveCatalog, getCatalog, removeCatalog, saveVideo, getVideos, deleteVideo } from '../services/catalogService';
+import { User, Brand, CatalogFile, VideoResource } from '../types';
 import { Button } from '../components/Button';
+import { Input } from '../components/Input';
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'users' | 'catalogs'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'catalogs' | 'videos'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [ungerCatalog, setUngerCatalog] = useState<CatalogFile | null>(null);
   const [elCastorCatalog, setElCastorCatalog] = useState<CatalogFile | null>(null);
   const [loadingFile, setLoadingFile] = useState(false);
+
+  // Video States
+  const [videos, setVideos] = useState<VideoResource[]>([]);
+  const [newVideoTitle, setNewVideoTitle] = useState('');
+  const [newVideoBrand, setNewVideoBrand] = useState<Brand>(Brand.EL_CASTOR);
+  const [newVideoType, setNewVideoType] = useState<'file' | 'link'>('link');
+  const [newVideoLink, setNewVideoLink] = useState('');
+  const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   useEffect(() => {
     refreshData();
@@ -19,12 +29,15 @@ export const AdminDashboard: React.FC = () => {
   const refreshData = async () => {
     setUsers(getAllUsers());
     
-    // Agora getCatalog é assíncrono
+    // Catálogos
     const unger = await getCatalog(Brand.UNGER);
     setUngerCatalog(unger);
-    
     const elCastor = await getCatalog(Brand.EL_CASTOR);
     setElCastorCatalog(elCastor);
+
+    // Vídeos
+    const allVideos = await getVideos();
+    setVideos(allVideos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, brand: Brand) => {
@@ -55,6 +68,67 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleAddVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newVideoTitle) {
+      alert("Digite um título.");
+      return;
+    }
+
+    if (newVideoType === 'link' && !newVideoLink) {
+      alert("Digite o link do vídeo.");
+      return;
+    }
+
+    if (newVideoType === 'file' && !newVideoFile) {
+      alert("Selecione um arquivo de vídeo.");
+      return;
+    }
+
+    setUploadingVideo(true);
+
+    let data = '';
+    if (newVideoType === 'link') {
+      data = newVideoLink;
+    } else if (newVideoFile) {
+      // Convert file to base64
+      data = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(newVideoFile);
+      });
+    }
+
+    const newVideo: VideoResource = {
+      id: Date.now().toString(),
+      title: newVideoTitle,
+      brand: newVideoBrand,
+      type: newVideoType,
+      data: data,
+      createdAt: new Date().toISOString()
+    };
+
+    const success = await saveVideo(newVideo);
+    setUploadingVideo(false);
+
+    if (success) {
+      alert("Vídeo adicionado com sucesso!");
+      setNewVideoTitle('');
+      setNewVideoLink('');
+      setNewVideoFile(null);
+      refreshData();
+    } else {
+      alert("Erro ao salvar vídeo. Se for um arquivo, verifique se não é muito grande.");
+    }
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    if (window.confirm("Deseja remover este vídeo?")) {
+      await deleteVideo(id);
+      refreshData();
+    }
+  };
+
   const formatDate = (isoString?: string) => {
     if (!isoString) return '-';
     return new Date(isoString).toLocaleString('pt-BR');
@@ -70,9 +144,9 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'users'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm`}
+            } w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors`}
           >
-            Usuários Cadastrados
+            Usuários
           </button>
           <button
             onClick={() => setActiveTab('catalogs')}
@@ -80,15 +154,25 @@ export const AdminDashboard: React.FC = () => {
               activeTab === 'catalogs'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm`}
+            } w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors`}
           >
-            Gestão de Catálogos (PDF)
+            Catálogos PDF
+          </button>
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`${
+              activeTab === 'videos'
+                ? 'border-brand-500 text-brand-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } w-1/4 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors`}
+          >
+            Gestão de Vídeos
           </button>
         </nav>
       </div>
 
       <div className="p-6">
-        {activeTab === 'users' ? (
+        {activeTab === 'users' && (
           <div>
             <div className="mb-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">Base de Usuários</h2>
@@ -137,10 +221,12 @@ export const AdminDashboard: React.FC = () => {
               </table>
             </div>
           </div>
-        ) : (
+        )}
+
+        {activeTab === 'catalogs' && (
           <div className="space-y-8">
             <h2 className="text-xl font-bold text-gray-900">Upload de Catálogos Digitais</h2>
-            <p className="text-gray-500 text-sm">Carregue os arquivos PDF originais. O sistema usa IndexedDB para suportar arquivos grandes.</p>
+            <p className="text-gray-500 text-sm">Carregue os arquivos PDF originais.</p>
             
             {/* UNGER Upload */}
             <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
@@ -225,6 +311,105 @@ export const AdminDashboard: React.FC = () => {
                     Processando e salvando arquivo no banco de dados local...
                 </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'videos' && (
+          <div className="space-y-8">
+            <h2 className="text-xl font-bold text-gray-900">Biblioteca de Vídeos de Apoio</h2>
+            
+            {/* Form de Adição */}
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <h3 className="text-lg font-bold text-gray-700 mb-4">Adicionar Novo Vídeo</h3>
+              <form onSubmit={handleAddVideo} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input 
+                    label="Título do Vídeo" 
+                    value={newVideoTitle} 
+                    onChange={(e) => setNewVideoTitle(e.target.value)} 
+                    placeholder="Ex: Como usar o rodo..."
+                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                    <select 
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-500 focus:border-brand-500 sm:text-sm"
+                      value={newVideoBrand}
+                      onChange={(e) => setNewVideoBrand(e.target.value as Brand)}
+                    >
+                      <option value={Brand.EL_CASTOR}>El Castor</option>
+                      <option value={Brand.UNGER}>Unger</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Origem do Vídeo</label>
+                  <div className="flex gap-4 mb-3">
+                    <label className="inline-flex items-center">
+                      <input type="radio" className="form-radio text-brand-600" name="videoType" value="link" checked={newVideoType === 'link'} onChange={() => setNewVideoType('link')} />
+                      <span className="ml-2 text-sm text-gray-700">Link Externo (Youtube, Instagram, etc)</span>
+                    </label>
+                    <label className="inline-flex items-center">
+                      <input type="radio" className="form-radio text-brand-600" name="videoType" value="file" checked={newVideoType === 'file'} onChange={() => setNewVideoType('file')} />
+                      <span className="ml-2 text-sm text-gray-700">Upload de Arquivo (MP4)</span>
+                    </label>
+                  </div>
+
+                  {newVideoType === 'link' ? (
+                    <Input 
+                      label="URL do Vídeo" 
+                      value={newVideoLink} 
+                      onChange={(e) => setNewVideoLink(e.target.value)} 
+                      placeholder="https://..."
+                    />
+                  ) : (
+                    <input 
+                      type="file" 
+                      accept="video/mp4"
+                      onChange={(e) => setNewVideoFile(e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100"
+                    />
+                  )}
+                </div>
+
+                <div className="pt-2">
+                  <Button type="submit" disabled={uploadingVideo}>
+                    {uploadingVideo ? 'Salvando...' : 'Adicionar Vídeo'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+
+            {/* Lista de Vídeos */}
+            <div>
+              <h3 className="text-lg font-bold text-gray-700 mb-4">Vídeos Cadastrados ({videos.length})</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {videos.map((v) => (
+                  <div key={v.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-xs font-bold px-2 py-1 rounded ${v.brand === Brand.UNGER ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {v.brand === Brand.UNGER ? 'Unger' : 'El Castor'}
+                        </span>
+                        <span className="text-xs text-gray-400">{v.type === 'file' ? 'Arquivo' : 'Link'}</span>
+                      </div>
+                      <h4 className="font-medium text-gray-900 mb-1">{v.title}</h4>
+                      <p className="text-xs text-gray-500 truncate" title={v.type === 'link' ? v.data : 'Arquivo Local'}>
+                        {v.type === 'link' ? v.data : 'Vídeo Armazenado Localmente'}
+                      </p>
+                    </div>
+                    <div className="mt-4 flex justify-end">
+                      <button 
+                        onClick={() => handleDeleteVideo(v.id)}
+                        className="text-red-600 text-xs font-medium hover:text-red-800 transition-colors"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { User, Brand } from './types';
 import { getCurrentUser, logoutUser } from './services/authService';
@@ -6,9 +7,10 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ChatAssistant } from './components/ChatAssistant';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { VideoLibrary } from './pages/VideoLibrary';
 import { Button } from './components/Button';
 
-type ViewState = 'dashboard' | 'admin';
+type ViewState = 'dashboard' | 'admin' | 'video-library';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -139,13 +141,18 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative pb-20">
         
         {/* Admin View */}
         {currentView === 'admin' && user.role === 'admin' && (
             <div className="animate-fade-in">
                 <AdminDashboard />
             </div>
+        )}
+
+        {/* Video Library View */}
+        {currentView === 'video-library' && (
+            <VideoLibrary onBack={() => setCurrentView('dashboard')} />
         )}
 
         {/* Dashboard View (User & Admin preview) */}
@@ -157,38 +164,48 @@ const App: React.FC = () => {
                  <ChatAssistant activeBrand={Brand.NONE} mode="embedded" />
             </div>
 
-            {/* 2. Download Options */}
-            <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+            {/* 2. Action Cards Grid */}
+            <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                
                {/* Unger Download */}
-               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between hover:border-unger-green transition-colors">
-                 <div className="flex items-center gap-3">
-                    <div className="bg-unger-green/10 p-3 rounded-full text-unger-green">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900">Catálogo Unger</h3>
-                        <p className="text-xs text-gray-500">Ferramentas para Vidros</p>
-                    </div>
+               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center text-center justify-between hover:border-unger-green transition-all hover:shadow-md gap-3">
+                 <div className="bg-unger-green/10 p-3 rounded-full text-unger-green">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                  </div>
-                 <Button variant="unger" onClick={() => handleDownloadCatalog(Brand.UNGER)} className="text-sm">
+                 <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Catálogo Unger</h3>
+                    <p className="text-xs text-gray-500 mt-1">Ferramentas para Vidros</p>
+                 </div>
+                 <Button variant="unger" onClick={() => handleDownloadCatalog(Brand.UNGER)} className="w-full text-xs">
                     Baixar PDF
                  </Button>
                </div>
 
                {/* El Castor Download */}
-               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between hover:border-elcastor-red transition-colors">
-                 <div className="flex items-center gap-3">
-                    <div className="bg-elcastor-red/10 p-3 rounded-full text-elcastor-red">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900">Catálogo El Castor</h3>
-                        <p className="text-xs text-gray-500">Técnico & Código de Cores</p>
-                    </div>
+               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center text-center justify-between hover:border-elcastor-red transition-all hover:shadow-md gap-3">
+                 <div className="bg-elcastor-red/10 p-3 rounded-full text-elcastor-red">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                  </div>
-                 <Button variant="elcastor" onClick={() => handleDownloadCatalog(Brand.EL_CASTOR)} className="text-sm">
+                 <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Catálogo El Castor</h3>
+                    <p className="text-xs text-gray-500 mt-1">Técnico & Código de Cores</p>
+                 </div>
+                 <Button variant="elcastor" onClick={() => handleDownloadCatalog(Brand.EL_CASTOR)} className="w-full text-xs">
                     Baixar PDF
+                 </Button>
+               </div>
+
+               {/* Video Library Button */}
+               <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center text-center justify-between hover:border-brand-500 transition-all hover:shadow-md gap-3 sm:col-span-2 md:col-span-1">
+                 <div className="bg-brand-100 p-3 rounded-full text-brand-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                 </div>
+                 <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Galeria de Vídeos</h3>
+                    <p className="text-xs text-gray-500 mt-1">Treinamento e Apoio</p>
+                 </div>
+                 <Button variant="primary" onClick={() => setCurrentView('video-library')} className="w-full text-xs">
+                    Acessar Vídeos
                  </Button>
                </div>
 
@@ -197,6 +214,21 @@ const App: React.FC = () => {
         )}
 
       </main>
+
+      {/* Footer System Info */}
+      <footer className="bg-white border-t border-gray-200 mt-auto">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+            <p className="text-xs text-gray-400">
+                &copy; {new Date().getFullYear()} CleanMaster AI. Todos os direitos reservados.
+            </p>
+            <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                <p className="text-xs font-mono text-gray-500">
+                    Versão do Sistema: <span className="font-bold text-gray-700">v1.2 (Atualizado)</span>
+                </p>
+            </div>
+        </div>
+      </footer>
     </div>
   );
 };

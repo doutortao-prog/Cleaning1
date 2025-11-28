@@ -19,14 +19,13 @@ declare global {
 
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode }) => {
   const [isOpen, setIsOpen] = useState(mode === 'embedded');
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'model',
-      text: 'Olá! Sou o CleanMaster AI.\n\nPara agilizar seu atendimento técnico, descreva o que precisa limpar ou use o microfone para falar.\n\nSe preferir, responda as perguntas com os números das opções (ex: 1, 2).',
-      timestamp: new Date()
-    }
-  ]);
+  const initialMessage: ChatMessage = {
+    id: 'welcome',
+    role: 'model',
+    text: 'Olá! Sou o CleanMaster AI (v1.2).\n\nPara agilizar seu atendimento técnico, descreva o que precisa limpar ou use o microfone para falar.\n\nSe preferir, responda as perguntas com os números das opções (ex: 1, 2).',
+    timestamp: new Date()
+  };
+  const [messages, setMessages] = useState<ChatMessage[]>([initialMessage]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -46,6 +45,12 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleClearChat = () => {
+    if (window.confirm("Deseja limpar o histórico da conversa e reiniciar o assistente?")) {
+        setMessages([initialMessage]);
+    }
   };
 
   const toggleListening = () => {
@@ -207,13 +212,25 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
           </div>
         </div>
         
-        {mode === 'floating' && (
-          <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+            <button 
+                onClick={handleClearChat}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-white"
+                title="Limpar Conversa / Reiniciar"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+
+            {mode === 'floating' && (
+            <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            )}
+        </div>
       </div>
 
       {/* Messages Area */}

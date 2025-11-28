@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Brand } from "../types";
 import { EL_CASTOR_PRODUCTS, MATERIAL_SPECS, COLOR_CODES } from "../elcastor/catalogData";
@@ -11,8 +10,12 @@ console.log("Status da Chave Gemini:", API_KEY ? `Configurada (Inicia com: ${API
 
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
+// Data de build para invalidar cache da IA
+const BUILD_DATE = new Date().toISOString();
+
 // Construct the technical knowledge base string
 const TECHNICAL_CONTEXT = `
+VERSÃO DO CATÁLOGO DE CONHECIMENTO: v1.2 - ${BUILD_DATE}
 DADOS TÉCNICOS DO CATÁLOGO EL CASTOR (PDF) - O CÉREBRO TÉCNICO:
 ---------------------------------------------------
 TABELA MESTRA DE RESISTÊNCIA DE MATERIAIS (CRÍTICO - O "PULO DO GATO"):

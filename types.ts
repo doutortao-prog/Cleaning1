@@ -66,3 +66,12 @@ export interface RecommendedProduct {
   colors: ProductColorCode[]; // Lista de códigos de cores disponíveis
   sectors: ProductSector[];   // Lista de setores recomendados
 }
+
+export interface VideoResource {
+  id: string;
+  title: string;
+  brand: Brand;
+  type: 'file' | 'link';
+  data: string; // Base64 string para arquivo ou URL para link
+  createdAt: string;
+}
