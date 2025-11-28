@@ -16,10 +16,15 @@ export const AdminDashboard: React.FC = () => {
     refreshData();
   }, []);
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setUsers(getAllUsers());
-    setUngerCatalog(getCatalog(Brand.UNGER));
-    setElCastorCatalog(getCatalog(Brand.EL_CASTOR));
+    
+    // Agora getCatalog é assíncrono
+    const unger = await getCatalog(Brand.UNGER);
+    setUngerCatalog(unger);
+    
+    const elCastor = await getCatalog(Brand.EL_CASTOR);
+    setElCastorCatalog(elCastor);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, brand: Brand) => {
@@ -38,12 +43,14 @@ export const AdminDashboard: React.FC = () => {
     if (success) {
       alert(`Catálogo ${brand} atualizado com sucesso!`);
       refreshData();
+    } else {
+      alert('Erro ao salvar o arquivo. Tente novamente.');
     }
   };
 
-  const handleDeleteCatalog = (brand: Brand) => {
+  const handleDeleteCatalog = async (brand: Brand) => {
     if (window.confirm(`Tem certeza que deseja remover o catálogo ${brand}?`)) {
-      removeCatalog(brand);
+      await removeCatalog(brand);
       refreshData();
     }
   };
@@ -133,7 +140,7 @@ export const AdminDashboard: React.FC = () => {
         ) : (
           <div className="space-y-8">
             <h2 className="text-xl font-bold text-gray-900">Upload de Catálogos Digitais</h2>
-            <p className="text-gray-500 text-sm">Carregue os arquivos PDF originais. Eles ficarão disponíveis para download e visualização na área do usuário.</p>
+            <p className="text-gray-500 text-sm">Carregue os arquivos PDF originais. O sistema usa IndexedDB para suportar arquivos grandes.</p>
             
             {/* UNGER Upload */}
             <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
@@ -215,7 +222,7 @@ export const AdminDashboard: React.FC = () => {
 
             {loadingFile && (
                 <div className="text-center text-brand-600 font-medium animate-pulse">
-                    Processando e salvando arquivo... Por favor aguarde.
+                    Processando e salvando arquivo no banco de dados local...
                 </div>
             )}
           </div>

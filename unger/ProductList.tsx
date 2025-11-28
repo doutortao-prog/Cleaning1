@@ -48,10 +48,13 @@ export const UngerCatalog: React.FC = () => {
   const [catalogPdf, setCatalogPdf] = useState<CatalogFile | null>(null);
 
   useEffect(() => {
-    const pdf = getCatalog(Brand.UNGER);
-    if (pdf) {
-        setCatalogPdf(pdf);
-    }
+    const loadPdf = async () => {
+        const pdf = await getCatalog(Brand.UNGER);
+        if (pdf) {
+            setCatalogPdf(pdf);
+        }
+    };
+    loadPdf();
   }, []);
 
   const filtered = MOCK_UNGER_PRODUCTS.filter(p => 

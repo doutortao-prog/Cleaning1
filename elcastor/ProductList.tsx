@@ -10,10 +10,13 @@ export const ElCastorCatalog: React.FC = () => {
   const [catalogPdf, setCatalogPdf] = useState<CatalogFile | null>(null);
 
   useEffect(() => {
-    const pdf = getCatalog(Brand.EL_CASTOR);
-    if (pdf) {
-        setCatalogPdf(pdf);
-    }
+    const loadPdf = async () => {
+        const pdf = await getCatalog(Brand.EL_CASTOR);
+        if (pdf) {
+            setCatalogPdf(pdf);
+        }
+    };
+    loadPdf();
   }, []);
 
   const filteredProducts = EL_CASTOR_PRODUCTS.filter(p => 
