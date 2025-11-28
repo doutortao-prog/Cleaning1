@@ -1,17 +1,18 @@
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// IMPORTANTE: Substitua estes valores pelos do seu Console Firebase
-// Se estiver usando Vercel, configure estas chaves nas Environment Variables
+// Configuração do Firebase com as chaves fornecidas
 const firebaseConfig = {
-  apiKey: process.env.VITE_FIREBASE_API_KEY || "SUA_API_KEY_AQUI",
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || "seu-projeto.firebaseapp.com",
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID || "seu-projeto",
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || "seu-projeto.appspot.com",
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "00000000000",
-  appId: process.env.VITE_FIREBASE_APP_ID || "1:00000000:web:0000000000"
+  apiKey: "AIzaSyAL-cnHD117r9wy5LZXTKmhWAGEtlyuuPc",
+  authDomain: "cleanmaster-app.firebaseapp.com",
+  projectId: "cleanmaster-app",
+  storageBucket: "cleanmaster-app.firebasestorage.app",
+  messagingSenderId: "329693909904",
+  appId: "1:329693909904:web:e3a2e87ca23e237a2f9915",
+  measurementId: "G-L9J3D2KQS8"
 };
 
 const app = initializeApp(firebaseConfig);
