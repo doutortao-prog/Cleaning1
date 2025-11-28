@@ -45,3 +45,23 @@ export interface CatalogFile {
   type: string;
   uploadDate: string;
 }
+
+// Novos tipos para a resposta rica da IA
+export type ProductColorCode = '+W' | '+K' | '+R' | '+O' | '+Y' | '+G' | '+B' | '+P' | '+T';
+
+export type ProductSector = 
+  | 'HOTELARIA' 
+  | 'ALIMENTICIA' 
+  | 'HOSPITALAR' 
+  | 'INDUSTRIA' 
+  | 'LIMPEZA' 
+  | 'VEICULOS';
+
+export interface RecommendedProduct {
+  id: string;
+  name: string;
+  description: string;
+  specs: string;
+  colors: ProductColorCode[]; // Lista de códigos de cores disponíveis
+  sectors: ProductSector[];   // Lista de setores recomendados
+}

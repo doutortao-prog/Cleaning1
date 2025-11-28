@@ -119,6 +119,63 @@ export const COLOR_CODES = {
 
 // Lista de Produtos Extraída do OCR
 export const EL_CASTOR_PRODUCTS: Product[] = [
+  // --- NOVOS PRODUTOS (Página 13 e 14) ---
+  {
+    id: '9201-9202',
+    name: 'Espátula Multiuso de Plástico',
+    description: 'Ideal para a remoção de sujidade impregnada em superfícies fixas e planas, sem riscá-las ou arranhá-las. Os materiais com os quais são fabricados atendem a todos os requisitos para estar em contato com alimentos. Alça com furo para armazenamento.',
+    category: 'Espátulas',
+    imageUrl: '',
+    brand: Brand.EL_CASTOR,
+    specs: "Material: Polipropileno (PP). Rigidez: Pequena (9201) ou Média (9202)."
+  },
+  {
+    id: '9801-9802',
+    name: 'Pá Sanitária (Pequena ou Grande)',
+    description: 'Ideal para áreas de produção e contato direto com alimentos. Por ser de plástico, não gera faísca e não oxida. Indicada para transportar produtos de recipiente para recipiente ou de recipiente para correias transportadoras.',
+    category: 'Pás',
+    imageUrl: '',
+    brand: Brand.EL_CASTOR,
+    specs: "Material: Polipropileno (PP). Tamanhos: Pequena (9801) e Grande (9802). Cores: +G, +R, +W, +Y, +B."
+  },
+  {
+    id: '5001',
+    name: 'Pincel Sanitário Red. 1 Pol (C. Suave Nylon)',
+    description: 'Escova sanitária com cerdas de nylon macias de 4,44cm comprimento e (2,54 cm) de diâmetro. Popular na indústria de panificação e em áreas de processamento de alimentos em geral. Obs: Não deve ser utilizada em trabalho contínuo a mais de 60°C.',
+    category: 'Pincéis',
+    imageUrl: '',
+    brand: Brand.EL_CASTOR,
+    specs: "Diâmetro: 2,54cm (1 Pol). Material: Nylon Macio. Temp Máx: 60°C."
+  },
+  {
+    id: '5002-5003',
+    name: 'Pincel Sanitário Plano',
+    description: 'Linha de pincéis com cerdas de nylon macias de 5,08 cm de comprimento, amplamente utilizados na indústria de panificação e em áreas de processamento de alimentos em geral. Obs: não devem ser utilizados em trabalho contínuo a mais de 60°C.',
+    category: 'Pincéis',
+    imageUrl: '',
+    brand: Brand.EL_CASTOR,
+    specs: "Larguras: 5,08cm (5002) e 7,62cm (5003). Material: Nylon Macio. Temp Máx: 60°C."
+  },
+  {
+    id: '3204',
+    name: 'Escova Manual de Nylon para Tecidos',
+    description: 'Cerda de nylon branca com 4,44 cm de comprimento. Esta escova é ideal para lavar estofados e carpetes com tecidos mais resistentes.',
+    category: 'Diversos',
+    imageUrl: '',
+    brand: Brand.EL_CASTOR,
+    specs: "Material: Nylon Branco. Uso: Estofados e Carpetes."
+  },
+  {
+    id: '4911',
+    name: 'Cordão de Fixação para Escovas de Mãos',
+    description: 'Ideal para a fixação das escovas manuais, deixando-as disponíveis nos locais de trabalho.',
+    category: 'Acessórios',
+    imageUrl: '',
+    brand: Brand.EL_CASTOR,
+    specs: "Material: Polipropileno/Espiral. Cores: +R, +W, +Y, +G, +B."
+  },
+
+  // --- PRODUTOS ANTERIORES ---
   // Página 3 - Escovas PBT
   {
     id: '4002-4102',

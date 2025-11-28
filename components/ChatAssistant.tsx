@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Brand, ChatMessage } from '../types';
+import { Brand, ChatMessage, RecommendedProduct } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
 import { Button } from './Button';
+import { ProductCard } from './ProductCard';
 
 interface ChatAssistantProps {
   activeBrand: Brand;
@@ -33,7 +34,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Efeito para garantir modo embedded sempre aberto
   useEffect(() => {
     if (mode === 'embedded') {
       setIsOpen(true);
@@ -48,7 +48,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Lógica de Reconhecimento de Voz
   const toggleListening = () => {
     if (isListening) {
       recognitionRef.current?.stop();
@@ -125,6 +124,48 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
     }
   };
 
+  // Função auxiliar para renderizar a mensagem e extrair o JSON se existir
+  const renderMessageContent = (text: string) => {
+    // Regex para capturar bloco JSON ```json ... ``` ou apenas { ... } / [ ... ] no final
+    const jsonRegex = /```json([\s\S]*?)```/;
+    const match = text.match(jsonRegex);
+
+    let cleanText = text;
+    let products: RecommendedProduct[] = [];
+
+    if (match) {
+      cleanText = text.replace(match[0], '').trim();
+      try {
+        products = JSON.parse(match[1]);
+      } catch (e) {
+        console.error("Erro ao fazer parse do JSON da IA", e);
+      }
+    }
+
+    return (
+      <div className="flex flex-col gap-4">
+        {/* Texto Normal */}
+        <div className="whitespace-pre-wrap leading-relaxed">
+          {cleanText.split(/(\*\*.*?\*\*)/g).map((part, j) => {
+             if (part.startsWith('**') && part.endsWith('**')) {
+                 return <strong key={j} className="font-bold">{part.slice(2, -2)}</strong>;
+             }
+             return <span key={j}>{part}</span>;
+          })}
+        </div>
+
+        {/* Cards de Produtos (se houver) */}
+        {products.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 mt-2">
+            {products.map((prod, idx) => (
+              <ProductCard key={`${prod.id}-${idx}`} product={prod} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const getBrandColor = () => {
     if (activeBrand === Brand.UNGER) return 'bg-unger-green';
     if (activeBrand === Brand.EL_CASTOR) return 'bg-elcastor-red';
@@ -183,18 +224,13 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-5 py-3 text-sm shadow-sm leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[85%] rounded-2xl px-5 py-3 text-sm shadow-sm leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-brand-600 text-white rounded-br-sm'
                   : 'bg-white text-gray-800 border border-gray-100 rounded-bl-sm'
               }`}
             >
-              {msg.text.split(/(\*\*.*?\*\*)/g).map((part, j) => {
-                  if (part.startsWith('**') && part.endsWith('**')) {
-                      return <strong key={j} className="font-bold">{part.slice(2, -2)}</strong>;
-                  }
-                  return <span key={j}>{part}</span>;
-               })}
+              {msg.role === 'model' ? renderMessageContent(msg.text) : msg.text}
             </div>
           </div>
         ))}
@@ -223,7 +259,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ activeBrand, mode 
               rows={3}
               className="w-full px-4 py-3 pr-12 bg-gray-50 border-transparent focus:bg-white border focus:border-brand-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-100 transition-all text-sm resize-none"
             />
-            {/* Botão de Microfone dentro da área de texto */}
             <button
               type="button"
               onClick={toggleListening}
