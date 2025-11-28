@@ -1,15 +1,14 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Brand } from './types';
 import { getCurrentUser, logoutUser } from './services/authService';
+import { getCatalog } from './services/catalogService';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
-import { UngerCatalog } from './unger/ProductList';
-import { ElCastorCatalog } from './elcastor/ProductList';
 import { ChatAssistant } from './components/ChatAssistant';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { Button } from './components/Button';
 
-type ViewState = 'dashboard' | 'unger' | 'elcastor' | 'admin';
+type ViewState = 'dashboard' | 'admin';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,10 +45,24 @@ const App: React.FC = () => {
     setAuthView('login');
   };
 
-  const getActiveBrand = (): Brand => {
-    if (currentView === 'unger') return Brand.UNGER;
-    if (currentView === 'elcastor') return Brand.EL_CASTOR;
-    return Brand.NONE;
+  const handleDownloadCatalog = async (brand: Brand) => {
+    try {
+        const file = await getCatalog(brand);
+        if (file) {
+            // Cria um link temporário para download
+            const link = document.createElement('a');
+            link.href = file.data;
+            link.download = file.name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert(`O catálogo ${brand === Brand.UNGER ? 'Unger' : 'El Castor'} ainda não foi disponibilizado pelo administrador.`);
+        }
+    } catch (error) {
+        console.error("Erro ao baixar catálogo", error);
+        alert("Erro ao processar o download.");
+    }
   };
 
   if (isLoading) {
@@ -89,37 +102,24 @@ const App: React.FC = () => {
                     CleanMaster AI {user.role === 'admin' && <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded ml-2">ADMIN</span>}
                 </span>
               </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {user.role === 'admin' ? (
+              
+              {/* Menu simplificado: Apenas Admin tem navegação extra */}
+              {user.role === 'admin' && (
+                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   <button
                     onClick={() => setCurrentView('admin')}
                     className={`${currentView === 'admin' ? 'border-brand-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16`}
                   >
                     Painel Administrativo
                   </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => setCurrentView('dashboard')}
-                      className={`${currentView === 'dashboard' ? 'border-brand-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16`}
-                    >
-                      Dashboard & Assistente
-                    </button>
-                    <button
-                      onClick={() => setCurrentView('unger')}
-                      className={`${currentView === 'unger' ? 'border-unger-green text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16`}
-                    >
-                      Catálogo Unger
-                    </button>
-                    <button
-                      onClick={() => setCurrentView('elcastor')}
-                      className={`${currentView === 'elcastor' ? 'border-elcastor-red text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16`}
-                    >
-                      Catálogo El Castor
-                    </button>
-                  </>
-                )}
-              </div>
+                  <button
+                    onClick={() => setCurrentView('dashboard')}
+                    className={`${currentView === 'dashboard' ? 'border-brand-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium h-16`}
+                  >
+                    Visão do Usuário
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex items-center">
               <div className="flex items-center">
@@ -148,69 +148,55 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {/* Dashboard View (User) */}
-        {currentView === 'dashboard' && user.role !== 'admin' && (
-          <div className="flex flex-col items-center justify-start space-y-8 animate-fade-in">
-            <div className="text-center w-full max-w-3xl">
-              <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-                Consultor Técnico Inteligente
-              </h1>
-              <p className="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-                Utilizo o catálogo técnico completo para diagnosticar sua necessidade de limpeza.
-                Pergunte sobre produtos, resistência química ou procedimentos APPCC.
-              </p>
-            </div>
+        {/* Dashboard View (User & Admin preview) */}
+        {currentView === 'dashboard' && (
+          <div className="flex flex-col items-center justify-start space-y-6 animate-fade-in">
             
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
-               <button 
-                onClick={() => setCurrentView('unger')}
-                className="p-6 border border-gray-200 rounded-xl bg-white hover:border-unger-green hover:shadow-lg transition-all flex items-center justify-between group"
-               >
-                 <div>
-                    <h3 className="font-bold text-gray-900 group-hover:text-unger-green">Catálogo Unger</h3>
-                    <p className="text-sm text-gray-500 mt-1">Ferramentas para vidros e limpeza em altura.</p>
+            {/* 1. Chat Assistant - Central Focus */}
+            <div className="w-full max-w-4xl">
+                 <ChatAssistant activeBrand={Brand.NONE} mode="embedded" />
+            </div>
+
+            {/* 2. Download Options */}
+            <div className="w-full max-w-4xl grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+               
+               {/* Unger Download */}
+               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between hover:border-unger-green transition-colors">
+                 <div className="flex items-center gap-3">
+                    <div className="bg-unger-green/10 p-3 rounded-full text-unger-green">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-900">Catálogo Unger</h3>
+                        <p className="text-xs text-gray-500">Ferramentas para Vidros</p>
+                    </div>
                  </div>
-                 <svg className="w-6 h-6 text-gray-300 group-hover:text-unger-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-               </button>
-               <button 
-                onClick={() => setCurrentView('elcastor')}
-                className="p-6 border border-gray-200 rounded-xl bg-white hover:border-elcastor-red hover:shadow-lg transition-all flex items-center justify-between group"
-               >
-                 <div>
-                    <h3 className="font-bold text-gray-900 group-hover:text-elcastor-red">Catálogo El Castor</h3>
-                    <p className="text-sm text-gray-500 mt-1">Escovas técnicas, rodos e código de cores.</p>
+                 <Button variant="unger" onClick={() => handleDownloadCatalog(Brand.UNGER)} className="text-sm">
+                    Baixar PDF
+                 </Button>
+               </div>
+
+               {/* El Castor Download */}
+               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between hover:border-elcastor-red transition-colors">
+                 <div className="flex items-center gap-3">
+                    <div className="bg-elcastor-red/10 p-3 rounded-full text-elcastor-red">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-gray-900">Catálogo El Castor</h3>
+                        <p className="text-xs text-gray-500">Técnico & Código de Cores</p>
+                    </div>
                  </div>
-                 <svg className="w-6 h-6 text-gray-300 group-hover:text-elcastor-red" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-               </button>
+                 <Button variant="elcastor" onClick={() => handleDownloadCatalog(Brand.EL_CASTOR)} className="text-sm">
+                    Baixar PDF
+                 </Button>
+               </div>
+
             </div>
           </div>
         )}
 
-        {/* Catalog Views (User) */}
-        <div className={(currentView === 'dashboard' || currentView === 'admin') ? 'hidden' : 'block animate-fade-in'}>
-            {currentView === 'unger' && <UngerCatalog />}
-            {currentView === 'elcastor' && <ElCastorCatalog />}
-        </div>
-
       </main>
-
-      {/* 
-        Persistent Chat Assistant - Only for Users
-      */}
-      {user.role !== 'admin' && (
-        <div className={
-            currentView === 'dashboard' 
-            ? "w-full max-w-4xl mx-auto px-4 pb-12" // Embedded Mode Container
-            : "" // Floating Mode handles its own positioning
-        }>
-            <ChatAssistant 
-                activeBrand={getActiveBrand()} 
-                mode={currentView === 'dashboard' ? 'embedded' : 'floating'}
-            />
-        </div>
-      )}
-
     </div>
   );
 };

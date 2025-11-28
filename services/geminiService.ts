@@ -5,6 +5,9 @@ import { EL_CASTOR_PRODUCTS, MATERIAL_SPECS, COLOR_CODES } from "../elcastor/cat
 // Safety check for API Key
 const API_KEY = process.env.API_KEY || '';
 
+// Log de diagnóstico para ajudar no Vercel (Visível no Console do Navegador - F12)
+console.log("Status da Chave Gemini:", API_KEY ? `Configurada (Inicia com: ${API_KEY.substring(0, 4)}...)` : "NÃO CONFIGURADA / VAZIA");
+
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Construct the technical knowledge base string

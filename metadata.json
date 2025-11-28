@@ -1,5 +1,7 @@
 {
   "name": "CleanMaster AI Catalog 1.0",
   "description": "A specialized SaaS assistant for Unger and El Castor professional cleaning tool catalogs, powered by Gemini AI.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }
