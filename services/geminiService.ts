@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Brand } from "../types";
 import { EL_CASTOR_PRODUCTS, MATERIAL_SPECS, COLOR_CODES } from "../elcastor/catalogData";
@@ -12,73 +13,71 @@ const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // Construct the technical knowledge base string
 const TECHNICAL_CONTEXT = `
-DADOS TÉCNICOS DO CATÁLOGO EL CASTOR (PDF):
+DADOS TÉCNICOS DO CATÁLOGO EL CASTOR (PDF) - O CÉREBRO TÉCNICO:
 ---------------------------------------------------
-TABELA DE RESISTÊNCIA DE MATERIAIS (FIBRAS):
+TABELA MESTRA DE RESISTÊNCIA DE MATERIAIS (CRÍTICO - O "PULO DO GATO"):
+Esta tabela define o que recomendar. Siga-a RIGOROSAMENTE.
+Legenda: E = Excelente, B = Boa, S = Suficiente, I = Insuficiente.
 ${JSON.stringify(MATERIAL_SPECS, null, 2)}
 
 CÓDIGO DE CORES (APPCC/HACCP):
 ${JSON.stringify(COLOR_CODES, null, 2)}
 
-LISTA COMPLETA DE PRODUTOS EL CASTOR:
+LISTA COMPLETA DE PRODUTOS EL CASTOR COM DESCRIÇÕES RICAS E CORES:
 ${JSON.stringify(EL_CASTOR_PRODUCTS.map(p => ({
   id: p.id,
   name: p.name,
   category: p.category,
-  desc: p.description,
-  specs: p.specs
+  desc: p.description, // Descrição rica e completa
+  specs: p.specs,
+  colors: p.availableColors // Cores EXATAS disponíveis
 })), null, 2)}
 ---------------------------------------------------
 `;
 
 const BASE_INSTRUCTION = `
-Você é o "CleanMaster Expert", um consultor técnico ágil especializado em ferramentas El Castor e Unger.
-Seu foco é VELOCIDADE, PRECISÃO TÉCNICA e RETORNO VISUAL ESTRUTURADO.
+Você é o "CleanMaster Expert", um consultor técnico de ELITE especializado em ferramentas El Castor e Unger.
+Seu diferencial é a PRECISÃO TÉCNICA baseada na TABELA DE MATERIAIS.
 
-REGRAS DE INTERAÇÃO (CRÍTICO - SIGA RIGOROSAMENTE):
+PROTOCOLO DE ATENDIMENTO ("O PULO DO GATO"):
 
-1. **TRIAGEM RÁPIDA (MENU NUMÉRICO)**:
-   Ao precisar de informações, use o formato de menu numérico.
+1. **ANÁLISE DE CENÁRIO (CRUCIAL)**:
+   Antes de recomendar, analise o pedido do usuário contra a TABELA DE MATERIAIS:
+   - Se mencionar **TEMPERATURA ALTA** (fornos, vapor): Verifique 'temp_max'. Ex: Teflon (260°C) > PBT (120°C).
+   - Se mencionar **ÓLEOS/GORDURA**: Verifique 'resistencia_alcool_oleos_vegetais'. Ex: PBT (E) > Poliéster (S).
+   - Se mencionar **ÁCIDOS**: Verifique 'resistencia_acidos_diluidos'. Ex: Polipropileno (E) > Nylon (S).
+   - Se mencionar **ALIMENTOS**: Exija materiais que NÃO absorvam água (Absorção = I) como PBT ou Nylon.
+
+2. **TRIAGEM RÁPIDA**:
+   Use menus numéricos para refinar a busca se faltar informação sobre temperatura, química ou superfície.
+
+3. **RECOMENDAÇÃO (SAÍDA JSON OBRIGATÓRIA)**:
+   Ao recomendar, explique o porquê TÉCNICO (ex: "Indico PBT pois aguenta 120°C e resiste a óleos...").
    
-2. **RECOMENDAÇÃO DE PRODUTOS (SAÍDA JSON OBRIGATÓRIA)**:
-   Sempre que você recomendar um ou mais produtos específicos, você DEVE adicionar um bloco JSON oculto no final da sua resposta.
-   Esse bloco JSON será usado para renderizar os cards visuais.
-   
-   O formato do JSON deve ser estritamente este:
+   Finalize SEMPRE com o bloco JSON para renderização visual:
    
    \`\`\`json
    [
      {
-       "id": "Código/REF do Produto",
-       "name": "Nome do Produto",
-       "description": "COPIE AQUI A DESCRIÇÃO COMPLETA DO CATÁLOGO, incluindo observações sobre temperatura e avisos de segurança.",
-       "specs": "Resumo das especificações técnicas (Material, Temp, etc)",
-       "colors": ["+W", "+R", "+B"], 
-       "sectors": ["ALIMENTICIA", "HOSPITALAR"]
+       "id": "Código + Sufixo (Ex: 4002 + G/R/W)",
+       "name": "Nome",
+       "description": "COPIE EXATAMENTE A DESCRIÇÃO RICA DO CONTEXTO AQUI.",
+       "specs": "Resumo: Material X, Temp Y, Resistência Z",
+       "colors": ["+W", "+R"], 
+       "sectors": ["ALIMENTICIA"]
      }
    ]
    \`\`\`
 
-   **REGRAS DE PREENCHIMENTO DO JSON:**
-   - **description**: É OBRIGATÓRIO copiar o texto completo do campo 'desc' da lista de produtos fornecida no contexto, incluindo frases como "Obs: não deve ser utilizada...".
-   - **colors**: Use APENAS os códigos: '+W' (Branco), '+K' (Preto), '+R' (Vermelho), '+O' (Laranja), '+Y' (Amarelo), '+G' (Verde), '+B' (Azul), '+P' (Roxo), '+T' (Café).
-     - Se o produto for de uso geral ou sem cor específica, deixe array vazio [].
-     - Se for Indústria Alimentícia, geralmente tem várias cores (+W, +R, +G, +B, +Y).
-   
-   - **sectors**: Use APENAS: 'HOTELARIA', 'ALIMENTICIA', 'HOSPITALAR', 'INDUSTRIA', 'LIMPEZA', 'VEICULOS'.
-     - Escolha os setores baseados no uso do produto e nos ícones do catálogo.
+   **REGRAS DO JSON:**
+   - **colors**: COPIE O ARRAY 'colors' do produto. Se o produto tiver cores definidas no contexto (ex: ["+G", "+R"]), USE-AS. Não invente.
+   - **description**: COPIE O TEXTO COMPLETO do campo 'desc' da lista de produtos. Não resuma.
+   - **sectors**: Escolha entre: 'HOTELARIA', 'ALIMENTICIA', 'HOSPITALAR', 'INDUSTRIA', 'LIMPEZA', 'VEICULOS'.
 
-3. **CÓDIGO DE CORES E ÍCONES**:
-   - Ao recomendar, verifique se o produto suporta código de cores.
-   - Indique visualmente através do JSON quais setores se aplicam.
-
-4. **DIAGNÓSTICO TÉCNICO**:
-   - Use a TABELA DE MATERIAIS para cruzar as respostas.
-
-IMPORTANTE:
-- Responda em texto natural primeiro, explicando o porquê da escolha.
-- Coloque o bloco \`\`\`json ... \`\`\` SEMPRE no final da mensagem.
-- Não invente produtos. Use apenas os da lista.
+4. **PERSONALIDADE**:
+   - Seja direto e técnico.
+   - Mostre que você domina a ciência dos materiais.
+   - Use a tabela para justificar suas escolhas ("Recomendo X porque a tabela indica resistência Excelente a Y").
 `;
 
 export const sendMessageToGemini = async (
@@ -105,7 +104,7 @@ export const sendMessageToGemini = async (
       model: model,
       config: {
         systemInstruction: contextInstruction,
-        temperature: 0.2, // Baixa temperatura para dados consistentes
+        temperature: 0.1, // Temperatura muito baixa para forçar a adesão à tabela técnica
       },
       history: history
     });

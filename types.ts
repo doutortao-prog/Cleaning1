@@ -22,6 +22,17 @@ export enum Brand {
   NONE = 'NONE'
 }
 
+// Novos tipos para a resposta rica da IA
+export type ProductColorCode = '+W' | '+K' | '+R' | '+O' | '+Y' | '+G' | '+B' | '+P' | '+T';
+
+export type ProductSector = 
+  | 'HOTELARIA' 
+  | 'ALIMENTICIA' 
+  | 'HOSPITALAR' 
+  | 'INDUSTRIA' 
+  | 'LIMPEZA' 
+  | 'VEICULOS';
+
 export interface Product {
   id: string;
   name: string;
@@ -30,6 +41,7 @@ export interface Product {
   imageUrl: string;
   brand: Brand;
   specs?: string; // Informações técnicas extras (ex: Material, Temp Max, Resistência Química)
+  availableColors?: ProductColorCode[]; // Cores disponíveis baseadas no catálogo
 }
 
 export interface ChatMessage {
@@ -45,17 +57,6 @@ export interface CatalogFile {
   type: string;
   uploadDate: string;
 }
-
-// Novos tipos para a resposta rica da IA
-export type ProductColorCode = '+W' | '+K' | '+R' | '+O' | '+Y' | '+G' | '+B' | '+P' | '+T';
-
-export type ProductSector = 
-  | 'HOTELARIA' 
-  | 'ALIMENTICIA' 
-  | 'HOSPITALAR' 
-  | 'INDUSTRIA' 
-  | 'LIMPEZA' 
-  | 'VEICULOS';
 
 export interface RecommendedProduct {
   id: string;
