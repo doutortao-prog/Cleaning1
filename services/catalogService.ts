@@ -1,4 +1,3 @@
-
 import { Brand, CatalogFile, VideoResource } from '../types';
 import { db, storage } from './firebaseConfig';
 import { 
@@ -20,18 +19,29 @@ import {
 
 // --- CATALOGS (PDFs) ---
 
-export const saveCatalog = async (brand: Brand, file: File): Promise<boolean> => {
+export const saveCatalog = async (brand: Brand, data: File | string): Promise<boolean> => {
   try {
-    // 1. Upload Arquivo para Storage
-    const storageRef = ref(storage, `catalogs/${brand}.pdf`);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
+    let url = '';
+    let type = '';
+
+    // Lógica Híbrida: Arquivo (Upload) ou String (Link)
+    if (data instanceof File) {
+        // Opção 1: Upload real para Firebase Storage
+        const storageRef = ref(storage, `catalogs/${brand}.pdf`);
+        await uploadBytes(storageRef, data);
+        url = await getDownloadURL(storageRef);
+        type = data.type;
+    } else {
+        // Opção 2: Salvar apenas o Link (Google Drive, Dropbox, etc)
+        url = data;
+        type = 'application/pdf (link)';
+    }
 
     // 2. Salvar Metadados no Firestore
     const catalogData: CatalogFile = {
-      name: file.name,
+      name: data instanceof File ? data.name : `Catálogo ${brand} (Link Externo)`,
       url: url,
-      type: file.type,
+      type: type,
       uploadDate: new Date().toISOString()
     };
 
@@ -63,9 +73,15 @@ export const removeCatalog = async (brand: Brand): Promise<void> => {
   try {
     // Delete from Firestore
     await deleteDoc(doc(db, "catalogs", brand));
-    // Delete from Storage
-    const storageRef = ref(storage, `catalogs/${brand}.pdf`);
-    await deleteObject(storageRef);
+    
+    // Tenta deletar do Storage apenas se não for link externo
+    // (Para simplificar, ignoramos erro se o arquivo não existir no storage)
+    try {
+        const storageRef = ref(storage, `catalogs/${brand}.pdf`);
+        await deleteObject(storageRef);
+    } catch (e) {
+        // Ignora erro de "object not found" se for um link
+    }
   } catch (e) {
     console.error("Error removing catalog", e);
   }
